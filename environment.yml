@@ -1,0 +1,11 @@
+name: pointpca3
+channels:
+  - conda-forge
+dependencies:
+  - python==3.12.9
+  - pip==23.3.1
+  - pip:
+      - numpy==1.26.1
+      - open3d==0.17.0
+      - maturin==1.8.3
+      - patchelf==0.17.2.1

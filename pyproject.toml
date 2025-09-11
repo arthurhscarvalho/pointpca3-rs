@@ -1,0 +1,17 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "pointpca3"
+version = "1.0.0"
+description = "A Rust-based Python library for extracting pointpca3 features from Point Clouds."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = ["numpy>=1.26", "toml>=0.10.0"]
+
+[project.urls]
+repository = "https://github.com/arthurhscarvalho/pointpca3"
+
+[tool.maturin]
+python-source = "python"
