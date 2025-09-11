@@ -6,12 +6,10 @@ extern crate rayon;
 mod pointpca3;
 mod utils;
 
-use numpy::PyArray1;
-use numpy::PyReadonlyArray2;
+use numpy::{PyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
-use utils::build_thread_pool;
-use utils::to_vec;
+use utils::{build_thread_pool, to_vec};
 
 #[pyfunction]
 fn compute_pointpca3<'py>(
@@ -29,8 +27,17 @@ fn compute_pointpca3<'py>(
     let points_b = to_vec(points_b);
     let colors_b = to_vec(colors_b);
     let pool = build_thread_pool(max_workers);
-    let pooled_predictors = pool.install(|| {
-        pointpca3::compute_pointpca3(points_a, colors_a, points_b, colors_b, search_size, verbose)
+    let pooled_predictors = py.allow_threads(|| {
+        pool.install(|| {
+            pointpca3::compute_pointpca3(
+                points_a,
+                colors_a,
+                points_b,
+                colors_b,
+                search_size,
+                verbose,
+            )
+        })
     });
     let py_array = PyArray1::from_iter(py, pooled_predictors.iter().cloned());
     py_array

@@ -1,10 +1,8 @@
-use pointpca2_rs::predictors;
-use pointpca2_rs::preprocessing;
-use pointpca2_rs::utils;
+use pointpca2_rs::{predictors, preprocessing, utils};
 
 mod features;
 
-pub fn compute_pointpca3<'a>(
+pub fn compute_pointpca3(
     points_a: Vec<[f64; 3]>,
     colors_a: Vec<[u8; 3]>,
     points_b: Vec<[f64; 3]>,
