@@ -64,16 +64,16 @@ pub fn compute_features(
         let eigenvectors_b = pca::compute_pca(&projection_b_to_a).transpose();
         // Build the row for this point
         let mut row_values: Vec<f64> = Vec::with_capacity(FEATURES_DIMENSION);
-        row_values.extend(projection_a_to_a.row(0).iter().copied()); // 0..3
-        row_values.extend(projection_b_to_a.row(0).iter().copied()); // 3..6
-        row_values.extend(mean_a.columns(3, 3).iter().copied()); // 6..9
-        row_values.extend(mean_b.iter().copied()); // 9..15
-        row_values.extend(variance_a.iter().copied()); // 15..21
-        row_values.extend(variance_b.iter().copied()); // 21..27
-        row_values.extend(covariance_ab.iter().copied()); // 27..33
-        row_values.extend(eigenvectors_b.row(0).iter().copied()); // 33..36
-        row_values.extend(eigenvectors_b.row(1).iter().copied()); // 36..39
-        row_values.extend(eigenvectors_b.row(2).iter().copied()); // 39..42
+        row_values.extend(projection_a_to_a.row(0).iter()); // 0..3
+        row_values.extend(projection_b_to_a.row(0).iter()); // 3..6
+        row_values.extend(mean_a.columns(3, 3).iter()); // 6..9
+        row_values.extend(mean_b.iter()); // 9..15
+        row_values.extend(variance_a.iter()); // 15..21
+        row_values.extend(variance_b.iter()); // 21..27
+        row_values.extend(covariance_ab.iter()); // 27..33
+        row_values.extend(eigenvectors_b.row(0).iter()); // 33..36
+        row_values.extend(eigenvectors_b.row(1).iter()); // 36..39
+        row_values.extend(eigenvectors_b.row(2).iter()); // 39..42
         let mut features = features.lock().unwrap();
         features.extend(row_values);
     });
