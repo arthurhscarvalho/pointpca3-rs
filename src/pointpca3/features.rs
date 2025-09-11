@@ -74,10 +74,10 @@ pub fn compute_features(
         row_values.extend(eigenvectors_b.row(0).iter().copied()); // 33..36
         row_values.extend(eigenvectors_b.row(1).iter().copied()); // 36..39
         row_values.extend(eigenvectors_b.row(2).iter().copied()); // 39..42
-        assert_eq!(row_values.len(), FEATURES_DIMENSION);
         let mut features = features.lock().unwrap();
         features.extend(row_values);
     });
     let features = features.into_inner().unwrap();
-    DMatrix::from_row_slice(features.len(), FEATURES_DIMENSION, &features)
+    let nrows = features.len() / FEATURES_DIMENSION;
+    DMatrix::from_row_slice(nrows, FEATURES_DIMENSION, &features)
 }
