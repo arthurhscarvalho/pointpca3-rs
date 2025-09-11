@@ -1,7 +1,7 @@
 use na::DMatrix;
 use pointpca2_rs::{knn_search, pca, utils};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::sync::Mutex;
 
 const FEATURES_DIMENSION: usize = 42;
@@ -16,7 +16,7 @@ pub fn compute_features(
     let kd_tree_a = knn_search::build_tree(&points_a);
     let kd_tree_b = knn_search::build_tree(&points_b);
     let nrows = points_a.len();
-    let visited: Mutex<BTreeSet<usize>> = Mutex::new(BTreeSet::new());
+    let visited: Mutex<HashSet<usize>> = Mutex::new(HashSet::new());
     let features: Mutex<Vec<f64>> = Mutex::new(Vec::new());
     (0..nrows).into_par_iter().for_each(|i| {
         // Check if this point was already visited
@@ -26,6 +26,7 @@ pub fn compute_features(
                 return;
             }
         }
+        // Get the nearest neighbors
         let knn_indices_a = knn_search::nearest_n(&kd_tree_a, &points_a[i], search_size);
         let knn_indices_b = knn_search::nearest_n(&kd_tree_b, &points_a[i], search_size);
         // Mark all neighbors as visited
