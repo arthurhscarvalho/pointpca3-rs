@@ -13,7 +13,8 @@ numpy = "0.24.0"
 rayon = "1.10.0"
 
 [dependencies.pointpca2-rs]
-path = "/home/arthurc/Documents/pointpca2-rs/"
+git = "https://github.com/arthurhscarvalho/pointpca2-rs"
+branch = "update-mod-privacy"
 
 [dependencies.pyo3]
 version = "0.24.1"
