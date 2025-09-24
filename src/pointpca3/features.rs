@@ -16,28 +16,20 @@ pub fn compute_features(
     let kd_tree_a = knn_search::build_tree(&points_a);
     let kd_tree_b = knn_search::build_tree(&points_b);
     let nrows = points_a.len();
-
-    // Use atomic booleans for thread-safe, deterministic visited tracking
-    // Memory usage: nrows * 1 byte (1MB for 1M elements)
     let visited = (0..nrows)
         .map(|_| AtomicBool::new(false))
         .collect::<Vec<_>>();
-
     let features: Mutex<Vec<f64>> = Mutex::new(Vec::new());
-
     (0..nrows).into_par_iter().for_each(|i| {
-        // Atomically check and set visited status in a single operation
+        // Process visited points only once
         if visited[i]
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .is_err()
         {
-            // Already visited, skip
             return;
         }
-        // Get the nearest neighbors
         let knn_indices_a = knn_search::nearest_n(&kd_tree_a, &points_a[i], search_size);
         let knn_indices_b = knn_search::nearest_n(&kd_tree_b, &points_a[i], search_size);
-        // Mark all neighbors as visited atomically
         for &idx in knn_indices_a.iter() {
             if idx < nrows {
                 visited[idx].store(true, Ordering::SeqCst);
