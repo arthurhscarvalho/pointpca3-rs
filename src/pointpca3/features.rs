@@ -4,6 +4,18 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelI
 
 const FEATURES_DIMENSION: usize = 42;
 
+#[inline(always)]
+fn copy_iter<'a, I>(row: &mut [f64], idx: &mut usize, iter: I)
+where
+    I: IntoIterator<Item = &'a f64>,
+{
+    for &value in iter {
+        row[*idx] = value;
+        *idx += 1;
+    }
+}
+
+#[inline(always)]
 fn compute_seeds(
     kd_tree_a: &kd_tree::KdIndexTree3<[f64; 3]>,
     points_a: &Vec<[f64; 3]>,
@@ -66,24 +78,16 @@ pub fn compute_features(
         let covariance_ab = mean_deviation_a.component_mul(&mean_deviation_b).row_mean();
         let eigenvectors_b = pca::compute_pca(&projection_b_to_a).transpose();
         let mut idx = 0;
-        macro_rules! copy_iter {
-            ($iter:expr) => {
-                for &value in $iter {
-                    row[idx] = value;
-                    idx += 1;
-                }
-            };
-        }
-        copy_iter!(projection_a_to_a.row(0).iter());
-        copy_iter!(projection_b_to_a.row(0).iter());
-        copy_iter!(mean_a.columns(3, 3).iter());
-        copy_iter!(mean_b.iter());
-        copy_iter!(variance_a.iter());
-        copy_iter!(variance_b.iter());
-        copy_iter!(covariance_ab.iter());
-        copy_iter!(eigenvectors_b.row(0).iter());
-        copy_iter!(eigenvectors_b.row(1).iter());
-        copy_iter!(eigenvectors_b.row(2).iter());
+        copy_iter(row, &mut idx, projection_a_to_a.row(0).iter());
+        copy_iter(row, &mut idx, projection_b_to_a.row(0).iter());
+        copy_iter(row, &mut idx, mean_a.columns(3, 3).iter());
+        copy_iter(row, &mut idx, mean_b.iter());
+        copy_iter(row, &mut idx, variance_a.iter());
+        copy_iter(row, &mut idx, variance_b.iter());
+        copy_iter(row, &mut idx, covariance_ab.iter());
+        copy_iter(row, &mut idx, eigenvectors_b.row(0).iter());
+        copy_iter(row, &mut idx, eigenvectors_b.row(1).iter());
+        copy_iter(row, &mut idx, eigenvectors_b.row(2).iter());
     });
     DMatrix::from_row_iterator(rows.len(), FEATURES_DIMENSION, rows.into_iter().flatten())
 }
