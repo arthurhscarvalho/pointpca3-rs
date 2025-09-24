@@ -1,3 +1,4 @@
+extern crate kd_tree;
 extern crate nalgebra as na;
 extern crate numpy;
 extern crate pointpca2_rs;
