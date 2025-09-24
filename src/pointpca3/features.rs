@@ -65,57 +65,25 @@ pub fn compute_features(
         let variance_b = mean_deviation_b.map(|x| x.powi(2)).row_mean();
         let covariance_ab = mean_deviation_a.component_mul(&mean_deviation_b).row_mean();
         let eigenvectors_b = pca::compute_pca(&projection_b_to_a).transpose();
-        // Fill row in fixed order
-        let mut c = 0;
-        for v in projection_a_to_a.row(0).iter() {
-            row[c] = *v;
-            c += 1;
+        let mut idx = 0;
+        macro_rules! copy_iter {
+            ($iter:expr) => {
+                for &value in $iter {
+                    row[idx] = value;
+                    idx += 1;
+                }
+            };
         }
-        for v in projection_b_to_a.row(0).iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in mean_a.columns(3, 3).iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in mean_b.iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in variance_a.iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in variance_b.iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in covariance_ab.iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in eigenvectors_b.row(0).iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in eigenvectors_b.row(1).iter() {
-            row[c] = *v;
-            c += 1;
-        }
-        for v in eigenvectors_b.row(2).iter() {
-            row[c] = *v;
-            c += 1;
-        }
+        copy_iter!(projection_a_to_a.row(0).iter());
+        copy_iter!(projection_b_to_a.row(0).iter());
+        copy_iter!(mean_a.columns(3, 3).iter());
+        copy_iter!(mean_b.iter());
+        copy_iter!(variance_a.iter());
+        copy_iter!(variance_b.iter());
+        copy_iter!(covariance_ab.iter());
+        copy_iter!(eigenvectors_b.row(0).iter());
+        copy_iter!(eigenvectors_b.row(1).iter());
+        copy_iter!(eigenvectors_b.row(2).iter());
     });
-    // Flatten rows into a single buffer
-    let mut features = Vec::with_capacity(rows.len() * FEATURES_DIMENSION);
-    for row in rows.into_iter() {
-        features.extend_from_slice(&row);
-    }
-    DMatrix::from_row_slice(
-        features.len() / FEATURES_DIMENSION,
-        FEATURES_DIMENSION,
-        &features,
-    )
+    DMatrix::from_row_iterator(rows.len(), FEATURES_DIMENSION, rows.into_iter().flatten())
 }
