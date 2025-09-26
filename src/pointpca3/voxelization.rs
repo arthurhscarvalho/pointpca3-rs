@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 #[inline(always)]
-fn compute_bounding_box_distances(points_a: &Vec<[f64; 3]>) -> (f64, f64, f64, f64, f64, f64) {
+fn compute_bounding_box(points_a: &Vec<[f64; 3]>) -> (f64, f64, f64, f64, f64, f64) {
     let mut min_x = f64::INFINITY;
     let mut min_y = f64::INFINITY;
     let mut min_z = f64::INFINITY;
@@ -45,7 +45,7 @@ pub fn voxel_based_sampling(
     if nrows == 0 {
         return Vec::new();
     }
-    let (min_x, min_y, min_z, max_x, max_y, max_z) = compute_bounding_box_distances(points_a);
+    let (min_x, min_y, min_z, max_x, max_y, max_z) = compute_bounding_box(points_a);
     let dx = (max_x - min_x).max(1e-9);
     let dy = (max_y - min_y).max(1e-9);
     let dz = (max_z - min_z).max(1e-9);
