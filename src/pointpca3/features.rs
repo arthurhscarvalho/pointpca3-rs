@@ -1,3 +1,4 @@
+use super::voxelization::voxel_based_sampling;
 use na::DMatrix;
 use pointpca2_rs::{knn_search, pca, utils};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
@@ -15,31 +16,6 @@ where
     }
 }
 
-#[inline(always)]
-fn compute_seeds(
-    kd_tree_a: &kd_tree::KdIndexTree3<[f64; 3]>,
-    points_a: &Vec<[f64; 3]>,
-    search_size: usize,
-) -> Vec<usize> {
-    let nrows = points_a.len();
-    let mut visited = vec![false; nrows];
-    let mut seeds: Vec<usize> = Vec::new();
-    for i in 0..nrows {
-        if visited[i] {
-            continue;
-        }
-        seeds.push(i);
-        visited[i] = true;
-        let knn_indices_a = knn_search::nearest_n(&kd_tree_a, &points_a[i], search_size);
-        for &idx in knn_indices_a.iter() {
-            if idx < nrows {
-                visited[idx] = true;
-            }
-        }
-    }
-    seeds
-}
-
 pub fn compute_features(
     points_a: Vec<[f64; 3]>,
     colors_a: Vec<[u8; 3]>,
@@ -50,7 +26,11 @@ pub fn compute_features(
     let kd_tree_a = knn_search::build_tree(&points_a);
     let kd_tree_b = knn_search::build_tree(&points_b);
     // Phase 1: Greedy-by-fixed-order deterministic selection (sequential)
-    let seeds = compute_seeds(&kd_tree_a, &points_a, search_size);
+    let t0 = std::time::Instant::now();
+    let seeds = voxel_based_sampling(&kd_tree_a, &points_a, search_size);
+    let t1 = std::time::Instant::now();
+    println!("Voxel-based sampling time: {:?}", t1 - t0);
+    println!("Number of seeds: {}", seeds.len());
     // Phase 2: Parallel feature computation for selected seeds; fixed-order output
     let mut rows = vec![[0.0f64; FEATURES_DIMENSION]; seeds.len()];
     rows.par_iter_mut().enumerate().for_each(|(row_idx, row)| {
