@@ -1,6 +1,7 @@
-use pointpca2_rs::{predictors, preprocessing, utils};
+use pointpca2_rs::{predictors, utils};
 
 mod features;
+mod preprocessing;
 mod voxelization;
 
 pub fn compute_pointpca3(
