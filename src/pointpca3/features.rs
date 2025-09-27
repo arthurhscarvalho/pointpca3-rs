@@ -25,13 +25,13 @@ pub fn compute_features(
 ) -> DMatrix<f64> {
     let kd_tree_a = knn_search::build_tree(&points_a);
     let kd_tree_b = knn_search::build_tree(&points_b);
-    // Phase 1: Greedy-by-fixed-order deterministic selection (sequential)
+    // Phase 1: Compute voxel-based sampling seeds
     let t0 = std::time::Instant::now();
     let seeds = voxel_based_sampling(&kd_tree_a, &points_a, search_size);
     let t1 = std::time::Instant::now();
     println!("Voxel-based sampling time: {:?}", t1 - t0);
     println!("Number of seeds: {}", seeds.len());
-    // Phase 2: Parallel feature computation for selected seeds; fixed-order output
+    // Phase 2: Parallel feature computation for selected seeds
     let mut rows = vec![[0.0f64; FEATURES_DIMENSION]; seeds.len()];
     rows.par_iter_mut().enumerate().for_each(|(row_idx, row)| {
         let i = seeds[row_idx];
