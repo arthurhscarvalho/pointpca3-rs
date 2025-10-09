@@ -1,4 +1,4 @@
-use super::voxelization::voxel_based_sampling;
+use crate::voxelization::voxel_based_sampling;
 use na::DMatrix;
 use pointpca2_rs::{knn_search, pca, utils};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};

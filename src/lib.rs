@@ -1,51 +1,40 @@
-extern crate kd_tree;
 extern crate nalgebra as na;
-extern crate numpy;
-extern crate pointpca2_rs;
-extern crate rayon;
 
-mod pointpca3;
-mod utils;
+use pointpca2_rs::{predictors, utils};
 
-use numpy::{PyArray1, PyReadonlyArray2};
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-use utils::{build_thread_pool, to_vec};
+mod features;
+mod preprocessing;
+mod voxelization;
 
-#[pyfunction]
-fn compute_pointpca3<'py>(
-    py: Python<'py>,
-    points_a: PyReadonlyArray2<'py, f64>,
-    colors_a: PyReadonlyArray2<'py, u8>,
-    points_b: PyReadonlyArray2<'py, f64>,
-    colors_b: PyReadonlyArray2<'py, u8>,
+pub fn compute_pointpca3(
+    points_a: Vec<[f64; 3]>,
+    colors_a: Vec<[u8; 3]>,
+    points_b: Vec<[f64; 3]>,
+    colors_b: Vec<[u8; 3]>,
     search_size: usize,
-    max_workers: usize,
     verbose: bool,
-) -> Bound<'py, PyArray1<f64>> {
-    let points_a = to_vec(points_a);
-    let colors_a = to_vec(colors_a);
-    let points_b = to_vec(points_b);
-    let colors_b = to_vec(colors_b);
-    let pool = build_thread_pool(max_workers);
-    let pooled_predictors = py.allow_threads(|| {
-        pool.install(|| {
-            pointpca3::compute_pointpca3(
-                points_a,
-                colors_a,
-                points_b,
-                colors_b,
-                search_size,
-                verbose,
-            )
-        })
-    });
-    let py_array = PyArray1::from_iter(py, pooled_predictors.iter().cloned());
-    py_array
-}
-
-#[pymodule(name = "pointpca3")]
-fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(compute_pointpca3, m)?)?;
-    Ok(())
+) -> na::Matrix1xX<f64> {
+    utils::print_if_verbose("Preprocessing", &verbose);
+    let t0 = std::time::Instant::now();
+    let (points_a, colors_a) = preprocessing::preprocess_point_cloud(points_a, colors_a);
+    let (points_b, colors_b) = preprocessing::preprocess_point_cloud(points_b, colors_b);
+    let t1 = std::time::Instant::now();
+    utils::print_if_verbose("Computing local features", &verbose);
+    let local_features =
+        features::compute_features(points_a, colors_a, points_b, colors_b, search_size);
+    let t2 = std::time::Instant::now();
+    utils::print_if_verbose("Computing predictors", &verbose);
+    let predictors_result = predictors::compute_predictors(local_features);
+    let t3 = std::time::Instant::now();
+    utils::print_if_verbose("Total time", &verbose);
+    utils::print_if_verbose(&format!("Preprocessing: {:?} seconds", t1 - t0), &verbose);
+    utils::print_if_verbose(
+        &format!("Computing local features: {:?} seconds", t2 - t1),
+        &verbose,
+    );
+    utils::print_if_verbose(
+        &format!("Computing predictors: {:?} seconds", t3 - t2),
+        &verbose,
+    );
+    predictors_result
 }

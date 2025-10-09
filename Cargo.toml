@@ -1,11 +1,11 @@
 [package]
-name = "pointpca3"
+name = "pointpca3-rs"
 version = "1.0.0"
 edition = "2021"
 
 [lib]
-name = "pointpca3"
-crate-type = ["cdylib"]
+name = "pointpca3_rs"
+path = "src/lib.rs"
 
 [dependencies]
 nalgebra = "0.32.5"
