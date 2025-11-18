@@ -9,14 +9,9 @@ path = "src/lib.rs"
 
 [dependencies]
 nalgebra = "0.32.5"
-numpy = "0.24.0"
 rayon = "1.10.0"
 kd-tree = {version = "0.6.0", features = ["rayon"]}
 
 [dependencies.pointpca2-rs]
 git = "https://github.com/arthurhscarvalho/pointpca2-rs"
 tag = "v1.5.1"
-
-[dependencies.pyo3]
-version = "0.24.1"
-features = ["extension-module"]

@@ -2,11 +2,13 @@ use pointpca2_rs::ply_manager;
 use pointpca3_rs;
 
 fn main() {
-    let search_size = 81;
+    let search_size = 361;
     let verbose = true;
     println!("Reading ply");
-    let (points_a, colors_a) = ply_manager::read_point_cloud("<path-to-reference>");
-    let (points_b, colors_b) = ply_manager::read_point_cloud("<path-to-distorted>");
+    let (points_a, colors_a) = ply_manager::read_point_cloud("pcs/amphoriskos_vox10.ply");
+    let (points_b, colors_b) = ply_manager::read_point_cloud(
+        "pcs/tmc13_amphoriskos_vox10_dec_geom01_text01_octree-predlift.ply",
+    );
     let pooled_predictors = pointpca3_rs::compute_pointpca3(
         points_a,
         colors_a,
