@@ -50,9 +50,12 @@ pub fn voxel_based_sampling(
     let dy = (max_y - min_y).max(1e-9);
     let dz = (max_z - min_z).max(1e-9);
     let volume = dx * dy * dz;
-    // 2) Define a voxelization distance (alpha)
-    // Use average inter-point spacing approximation: alpha ≈ cbrt(volume / n)
-    let alpha = (volume / nrows as f64).cbrt().max(1.0);
+    // Define a voxelization distance (alpha)
+    // Size voxels to contain approximately search_size points
+    // alpha ≈ cbrt(volume * search_size / n)
+    let alpha = (volume * search_size as f64 / nrows as f64)
+        .cbrt()
+        .max(1e-9);
     // Shared visited state across threads
     let visited: Arc<Vec<AtomicBool>> =
         Arc::new((0..nrows).map(|_| AtomicBool::new(false)).collect());
@@ -66,7 +69,6 @@ pub fn voxel_based_sampling(
     };
     // Iterate passes until all points are visited
     loop {
-        // Gather current unvisited points
         let mut unvisited_indices: Vec<usize> = Vec::with_capacity(nrows);
         for i in 0..nrows {
             if !visited[i].load(Ordering::Relaxed) {
@@ -76,7 +78,7 @@ pub fn voxel_based_sampling(
         if unvisited_indices.is_empty() {
             break;
         }
-        // 3) Build voxel map for the unvisited set, selecting one representative per voxel
+        // Build voxel map for the unvisited set, selecting one representative per voxel
         // Criterion: closest to the voxel center
         let mut voxel_to_candidate: HashMap<[i32; 3], (usize, f64)> = HashMap::new();
         for &idx in unvisited_indices.iter() {
@@ -102,30 +104,36 @@ pub fn voxel_based_sampling(
             }
         }
         // Collect unique candidate indices for this pass
-        let candidates: Vec<usize> = voxel_to_candidate.values().map(|(idx, _)| *idx).collect();
-        // 4) For each voxel (candidate), compute KNN and mark visited, in parallel
-        candidates.par_iter().for_each(|&i| {
-            // Attempt to claim this seed (avoid duplicates across overlapping neighborhoods)
+        let mut candidates: Vec<usize> = voxel_to_candidate.values().map(|(idx, _)| *idx).collect();
+        // Sort candidates for deterministic ordering
+        candidates.sort_unstable();
+        // Claim seeds that are still unvisited
+        let mut current_seeds: Vec<usize> = Vec::new();
+        for &i in candidates.iter() {
+            // Attempt to claim this seed
             if visited[i]
                 .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
                 .is_ok()
             {
-                // Record seed
-                {
-                    let mut guard = seeds_acc.lock().unwrap();
-                    guard.push(i);
-                }
-                // Mark its neighborhood
-                let knn_indices_a = knn_search::nearest_n(&kd_tree_a, &points_a[i], search_size);
-                for &idx in knn_indices_a.iter() {
-                    if idx < nrows {
-                        visited[idx].store(true, Ordering::Relaxed);
-                    }
+                current_seeds.push(i);
+            }
+        }
+        // Mark neighborhoods for all claimed seeds
+        current_seeds.par_iter().for_each(|&i| {
+            let knn_indices_a = knn_search::nearest_n(&kd_tree_a, &points_a[i], search_size);
+            for &idx in knn_indices_a.iter() {
+                if idx < nrows {
+                    visited[idx].store(true, Ordering::Relaxed);
                 }
             }
         });
-        // 5) If after the pass there are still unvisited points, the loop continues
-        // 6) Loop repeats until all points are visited
+        // Add all claimed seeds to the accumulator
+        {
+            let mut guard = seeds_acc.lock().unwrap();
+            guard.extend(current_seeds);
+        }
+        // If after the pass there are still unvisited points, the loop continues
+        // Loop repeats until all points are visited
     }
     let seeds = Arc::try_unwrap(seeds_acc).unwrap().into_inner().unwrap();
     seeds
